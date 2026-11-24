@@ -1,0 +1,14 @@
+.vs/
+@"
+build/
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+.vscode/
+.idea/
+*.ipch
+.db
+"@ | Set-Content -Encoding utf8 .gitignore

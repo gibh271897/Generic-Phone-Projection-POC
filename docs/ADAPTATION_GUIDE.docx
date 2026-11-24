@@ -1,0 +1,401 @@
+# Phone Projection Middleware - Adaptation Guide
+
+## Overview
+
+This document describes how to adapt the Generic Phone Projection Middleware to different automotive projection platforms. The middleware is designed with a clear separation between platform-agnostic core functionality and platform-specific adapters.
+
+## Architecture Recap
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+├─────────────────────────────────────────────────────────────┤
+│                  Middleware Core (Platform-Agnostic)        │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
+│  │  Session    │ │  Lifecycle  │ │   Event     │           │
+│  │  Manager    │ │  Manager    │ │  Router     │           │
+│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘           │
+│         │               │               │                   │
+├─────────┼───────────────┼───────────────┼───────────────────┤
+│         ▼               ▼               ▼                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │           IPlatformAdapter (Abstract Interface)      │   │
+│  ├──────────┬──────────┬──────────┬──────────┬────────┤   │
+│  │Connect...│Resource..│  Input   │   UI     │Capabili│   │
+│  │  Mgr     │  Mgr     │ Handler  │ Renderer │ty Provider│  │
+│  └──────────┴──────────┴──────────┴──────────┴────────┘   │
+└─────────────────────────────────────────────────────────────┘
+         │               │               │               │
+         ▼               ▼               ▼               ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Platform Adapter Implementations                │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │
+│  │ Android Auto │ │  CarPlay*    │ │ Proprietary  │         │
+│  │   Adapter    │ │  (Future)    │ │   Adapter    │         │
+│  └──────────────┘ └──────────────┘ └──────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+
+CarPlay: is an additional future platform adapter which is not included in this PoC
+=====================================================================================================
+New Platform Adapter
+
+1. Define a new class that derives from ‘PlatformAdapterBase’:
+
+// include/my_platform/my_platform_adapter.hpp
+#include "platform/platform_adapter.hpp"
+
+namespace phone_projection {
+namespace my_platform {
+
+class MyPlatformAdapter : public platform::PlatformAdapterBase {
+public:
+MyPlatformAdapter() {
+metadata_.name = "my_platform";
+metadata_.version = "1.0.0";
+metadata_.description = "My Platform Projection Adapter";
+metadata_.supported_transports = {"usb", "wifi"};
+
+// Define platform capabilities
+capabilities_.supports_touch = true;
+capabilities_.supports_rotary = false;
+// ... etc
+
+// Create component implementations
+connection_manager_ = std::make_unique();
+resource_manager_ = std::make_unique();
+input_handler_ = std::make_unique();
+ui_renderer_ = std::make_unique();
+capability_provider_ = std::make_unique();
+}
+
+Result initialize(const std::string& config) override {
+// Parse config, initialize platform SDK
+return Result();
+}
+
+Result shutdown() override {
+// Cleanup platform SDK
+return Result();
+}
+};
+} // namespace my_platform
+} // namespace phone_projection
+
+// Register the adapter
+REGISTER_ADAPTER(phone_projection::my_platform::MyPlatformAdapter, my_platform)
+
+2. Define component interfaces
+Every component should also define one or more interfaces:
+----------------------------------------------------------------------------------------------
+Connection Manager (IConnectionManager)
+
+class MyConnectionManager : public platform::ConnectionManagerBase {
+public:
+Result connect(const VehicleProfile& profile) override {
+// 1. Initialize transport (USB/WiFi/Bluetooth)
+// 2. Perform platform-specific handshake
+// 3. Start data receive loop
+// 4. Update state to Connected
+return Result();
+}
+
+Result disconnect() override {
+// 1. Stop data receive loop
+// 2. Send disconnect notification
+// 3. Close transport
+// 4. Update state to Disconnected
+return Result();
+}
+
+Result send_data(const std::vector& data) override {
+// Serialize and send via transport
+return Result();
+}
+};
+
+Responsibilities:
+-Initialisation of transport protocols (USB, Bluetooth, WiFi etc);
+-Handshaking;
+-Packet assembly and dis-assembly;
+-Tracking of connection status;
+-Re-connection.
+*********************************************************************
+
+Resource Manager (IResourceManager)
+
+class MyResourceManager : public platform::ResourceManagerBase {
+public:
+Result request_resource(ResourceType type,
+const std::string& session_id) override {
+// Platform-specific resource acquisition
+// e.g., Audio focus via platform audio policy
+//       Video surface via platform compositor
+return ResourceManagerBase::request_resource(type, session_id);
+}
+}
+
+Responsibilities include:
+- Audio ducking, pause and play.
+- Video composition and resizing.
+- Keyboard, rotary and touch input focus.
+- Navigational turn-by-turn focus.
+*********************************************************************
+Input Handler (IInputHandler)
+class MyInputHandler : public platform::InputHandlerBase {
+public:
+Result send_input(const Event& event) override {
+
+// Translate middleware event to platform format
+switch (event.type) {
+case EventType::TouchDown:
+case EventType::TouchUp:
+case EventType::TouchMove:
+send_touch_event(static_cast(event));
+break;
+case EventType::RotaryClockwise:
+case EventType::RotaryCounterClockwise:
+send_rotary_event(static_cast(event));
+break;
+// ... etc
+}
+return Result();
+}
+Result set_focus(bool focused) override {
+// Notify platform of focus change
+return Result();
+}
+};
+Responsibilities are:
+- Conversion of middle-ware input events into platform events.
+- Input focus management.
+- Platform specific input delivery.
+- Specification of input types supported.
+*********************************************************************
+UI renderer (IUiRenderer)
+class MyUiRenderer : public platform::UiRendererBase {
+public:
+Result render_template(TemplateType type,
+const std::string& json_payload) override {
+// Convert template to platform format
+// e.g., Android Auto: Car App Library templates
+//       CarPlay: CarPlay UI templates
+//       Custom: Proprietary layout system
+return Result();
+}
+};
+Responsibilities include:
+- Template mapping.
+- Surface management.
+- Renderer integration.
+- Responsive layout.
+*********************************************************************
+Capability Provider (ICapabilityProvider)
+class MyCapabilityProvider : public platform::CapabilityProviderBase {
+public:
+MyCapabilityProvider() {
+capabilities_.supports_touch = true;
+capabilities_.supports_rotary = false;
+capabilities_.supports_voice = true;
+// ... define all capabilities
+capabilities_.supported_codecs = {"H264", "VP9"};
+capabilities_.supported_templates = {"MediaTemplate", "ListTemplate", "NavTemplate"};
+}
+};
+Responsibilities include:
+- Specification of platform capabilities.
+- Capability negotiation.
+- Checking of version compatibility.
+*********************************************************************
+*********************************************************************
+3. Build
+In src/my_platform/CMakeLists.txt, add:
+
+add_library(pp_my_platform STATIC
+my_platform_adapter.cpp
+my_connection_manager.cpp
+my_resource_manager.cpp
+my_input_handler.cpp
+my_ui_renderer.cpp
+my_capability_provider.cpp
+)
+*********************************************************************
+target_include_directories(pp_my_platform
+PUBLIC
+$
+PRIVATE
+${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(pp_my_platform
+PUBLIC
+pp_common
+pp_platform
+pp_core
+)
+*********************************************************************
+# Add to main build
+# In src/CMakeLists.txt:
+# add_subdirectory(my_platform)
+*********************************************************************
+*********************************************************************
+## Platform-Specific Considerations
+### Android Auto (Reference Implementation - This PoC)
+| Aspect | Implementation Detail |
+|--------|----------------------|
+| Transport | USB (ADB-like) or Bluetooth (PAN) |
+| Protocol | Proprietary binary protocol over transport |
+| UI Model | Car App Library (template-based) |
+| Audio | Media session + audio focus |
+| Video | SurfaceTexture/SurfaceView composition |
+| Input | Rotary, touch, keyboard, voice |
+| Safety | Driver distraction API (UX restrictions) |
+*********************************************************************
+*********************************************************************
+### Apple CarPlay (Future Extension)(will not bein demo app)
+| Aspect | Implementation Detail |
+|--------|----------------------|
+| Transport | USB (iAP2) or WiFi (Bonjour + TLS) |
+| Protocol | iAP2 over transport, CarPlay protocol |
+| UI Model | CarPlay templates (similar but different) |
+| Audio | CoreAudio + audio session |
+| Video | IOSurface / CoreVideo |
+| Input | Touch, rotary (via HID), Siri |
+| Security | Certificate-based authentication |
+*********************************************************************
+*********************************************************************
+### Proprietary IVI Systems (Future Extension) (Working .... in progress)
+| Aspect | Implementation Detail |
+|--------|----------------------|
+| Transport | Vendor-specific (Ethernet, CAN, ) |
+| Protocol | Vendor-defined (looking for working expl..in progress) |
+| UI Model | Custom (Qt, native, HTML, currently a console based) |
+| Audio | Vendor audio framework (PCM, currently a console based) |
+| Video | Vendor compositor ( currently a console based) |
+| Input | Vendor input system (libinput, currently a console based) |
+*********************************************************************
+*********************************************************************
+### Smart Cluster / Instrument Cluster (Working .... in progress 80% implemented)
+| Aspect | Implementation Detail |
+|--------|----------------------|
+| Transport | CAN, Ethernet  |
+| Protocol | ASAM XCP, SOME/IP, can be vendor-specific |
+| UI Model |  gauges, minimal templates |
+| Safety | Demo, so not checking  |
+| Latency | < 50ms, will check is future after demo is accepted |
+| Priority | Safety-critical path |
+*********************************************************************
+*********************************************************************
+## Configuration for New Platforms
+Add platform configuration to JSON config:
+{
+"platform_configs": {
+"my_platform": {
+"transport": "usb",
+"vendor_id": "0x1234",
+"product_id": "0x5678",
+"firmware_version": "2.0.0",
+"enable_feature_x": "true",
+"custom_parameter": "value"
+}
+}
+}
+*********************************************************************
+Adapter interface
+Result MyPlatformAdapter::initialize(const std::string& config)
+{
+nlohmann::json json = nlohmann::json::parse(config);
+std::string transport = json.value("transport", "usb");
+}
+*********************************************************************
+New adapters
+
+Unit tests (smart cluster)
+// tests/test_my_platform_adapter.cpp
+#include
+#include "my_platform/my_platform_adapter.hpp"
+TEST(MyPlatformAdapterTest, Initialise)
+{
+std::unique_ptr adapter = std::make_unique();
+Result result = adapter->initialize("{}");
+EXPECT_TRUE(result.is_ok());
+}
+TEST(MyPlatformAdapterTest, Connect/Disconnect)
+{
+std::unique_ptr adapter = std::make_unique();
+adapter->initialize("{}");
+
+VehicleProfile profile = create_test_profile();
+Result conn_result = adapter->get_connection_manager()->connect(profile);
+EXPECT_TRUE(conn_result.is_ok());
+// Wait for connection
+Result disc_result = adapter->get_connection_manager()->disconnect();
+EXPECT_TRUE(disc_result.is_ok());
+}
+*********************************************************************
+Integration tests
+// tests/integration/test_my_platform_integration.cpp
+TEST(MyPlatformIntegration, End-to-end)
+{
+std::unique_ptr middleware = create_projection_middleware();
+middleware->lifecycle_manager()->load_adapter("my_platform");
+middleware->lifecycle_manager()->set_active_adapter("my_platform");
+VehicleProfile profile = create_test_profile();
+Result session = middleware->create_and_connect_session(profile);
+EXPECT_TRUE(session.is_ok());
+// Test resource requests
+Result audio = middleware->session_manager()->request_audio_focus(session.value());
+EXPECT_TRUE(audio.is_ok());
+// Test input injection
+
+middleware->session_manager()->disconnect(session.value());
+}
+*********************************************************************
+Migration tasks
+To migrate to a new platform you need to:
+[ ] Create a capability matrix
+[ ] Develop an IConnectionManager (transport and protocol functionality)
+[ ] Develop an IResourceManager (audio, video, input and nav functionality)
+[ ] Develop an IInputHandler (mapping of events)
+[ ] Develop an IUiRenderer (mapping of templates)
+[ ] Develop an ICapabilityProvider (declaration of capabilities)
+[ ] Subclass PlatformAdapterBase
+[ ] Register using REGISTER_ADAPTER
+[ ] Configure CMake build
+[ ] Develop unit tests
+[ ] Develop integration tests
+[ ] Note platform specific requirements
+[ ] Include sample vehicle profile
+*********************************************************************
+
+Common approaches
+•Asynchronous processing
+•Leverage the event router to handle asynchronous processing:
+•Within connection manager
+•void on_protocol_handshake_complete() {
+•set_state(State::Connected);
+// Notify middleware
+if (data_callback_) {
+std::vector connected_msg = {0x01, 0x00}; // Connected
+notify_data_received(connected_msg);
+}
+}
+*********************************************************************
+Error Handling
+Result MyConnectionManager::connect(const VehicleProfile& profile)
+{
+if (!transport_->open()) {
+set_state(State::Error, core::ErrorCode::ConnectionFailed);
+return Result(core::make_error_code(core::ErrorCode::ConnectionFailed));
+}
+}
+*********************************************************************
+Conclusion
+
+Using the middleware’s adapter pattern means that new projection platforms can be added without having to change central functions. Adapters provide a clean interface to hide platform specific implementation details. Benefits include:
+1. Separation – platform issues are contained so do not impact on central functions
+
+2. Testability – adapters can be replaced with mocks or stubs
+3. Separation – clear division between areas of concern
+4. Scalability – simply add new adapters for additional platforms
+5. Customisation – vehicle profiles are used to negotiate capabilities
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

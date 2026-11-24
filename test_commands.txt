@@ -1,0 +1,11 @@
+start session
+status
+send nav
+send media
+send input
+render video
+render audio
+disconnect video
+disconnect audio
+disconnect session
+quit

@@ -1,0 +1,126 @@
+{
+  "active_profile": "Gitesh_Cars",
+  "vehicle_profiles": {
+    "demo_vehicle_1": {
+      "vehicle_id": "Gitesh_Cars",
+      "make": "Elektrobit",
+      "model": "IVI System",
+      "year": "2025",
+      "head_unit_model": "HU-2025",
+      "head_unit_firmware": "1.0.0",
+      "preferred_transport": "usb",
+      "screen_width": 1280,
+      "screen_height": 720,
+      "pixel_density": 1.5,
+      "is_right_hand_drive": false,
+      "capabilities": {
+        "supports_touch": true,
+        "supports_rotary": true,
+        "supports_keyboard": true,
+        "supports_voice": true,
+        "supports_video": true,
+        "supports_audio": true,
+        "supports_navigation": true,
+        "max_video_width": 1920,
+        "max_video_height": 1080,
+        "supported_codecs": [ "H264", "VP8", "VP9" ],
+        "supported_templates": [
+          "NavigationTemplate",
+          "MediaTemplate",
+          "MessageTemplate",
+          "SignInTemplate",
+          "LongMessageTemplate",
+          "ListTemplate",
+          "GridTemplate",
+          "PaneTemplate",
+          "SearchTemplate"
+        ]
+      }
+    },
+    "compact_vehicle_1": {
+      "vehicle_id": "compact_vehicle_1",
+      "make": "Compact",
+      "model": "City Car",
+      "year": "2023",
+      "head_unit_model": "HU-COM-2023",
+      "head_unit_firmware": "2.1.0",
+      "preferred_transport": "bluetooth",
+      "screen_width": 800,
+      "screen_height": 480,
+      "pixel_density": 1.0,
+      "is_right_hand_drive": true,
+      "capabilities": {
+        "supports_touch": true,
+        "supports_rotary": false,
+        "supports_keyboard": false,
+        "supports_voice": true,
+        "supports_video": true,
+        "supports_audio": true,
+        "supports_navigation": false,
+        "max_video_width": 800,
+        "max_video_height": 480,
+        "supported_codecs": ["H264"],
+        "supported_templates": [
+          "MediaTemplate",
+          "ListTemplate",
+          "NavigationTemplate"
+        ]
+      }
+    },
+    "premium_vehicle_1": {
+      "vehicle_id": "premium_vehicle_1",
+      "make": "Premium",
+      "model": "Luxury Sedan",
+      "year": "2025",
+      "head_unit_model": "HU-PREM-2025",
+      "head_unit_firmware": "3.0.0",
+      "preferred_transport": "usb",
+      "screen_width": 1920,
+      "screen_height": 1080,
+      "pixel_density": 2.0,
+      "is_right_hand_drive": false,
+      "capabilities": {
+        "supports_touch": true,
+        "supports_rotary": true,
+        "supports_keyboard": true,
+        "supports_voice": true,
+        "supports_video": true,
+        "supports_audio": true,
+        "supports_navigation": true,
+        "max_video_width": 1920,
+        "max_video_height": 1080,
+        "supported_codecs": ["H264", "VP8", "VP9", "AV1"],
+        "supported_templates": [
+          "NavigationTemplate",
+          "MediaTemplate",
+          "MessageTemplate",
+          "SignInTemplate",
+          "LongMessageTemplate",
+          "ListTemplate",
+          "GridTemplate",
+          "PaneTemplate",
+          "SearchTemplate"
+        ]
+      }
+    }
+  },
+  "platform_configs": {
+    "android_auto": {
+      "enable_wireless": "false",
+      "require_usb_debugging": "true",
+      "max_reconnect_attempts": "3",
+      "reconnect_delay_ms": "2000",
+      "video_bitrate_kbps": "8000",
+      "audio_sample_rate": "48000",
+      "audio_channels": "2"
+    },
+    "carplay": {
+      "enable_wireless": "true",
+      "certificate_path": "/etc/carplay/cert.pem",
+      "private_key_path": "/etc/carplay/key.pem",
+      "video_bitrate_kbps": "10000",
+      "audio_sample_rate": "48000",
+      "audio_channels": "2"
+    }
+  }
+}

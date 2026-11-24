@@ -1,0 +1,12 @@
+﻿.vs/
+*.ipch
+*.db
+build/
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+.vscode/
+.idea/
